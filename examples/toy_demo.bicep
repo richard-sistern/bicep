@@ -1,12 +1,44 @@
+param location string = 'westus3'
+param storageAccountName string = 'toylaunch${uniqueString(resourceGroup().id)}'
+param appServiceAppName string = 'toylaunch${uniqueString(resourceGroup().id)}'
+
+@allowed([
+  'nonprod'
+  'prod'
+])
+param environmentType string
+
+var storageAccountSkuName = (environmentType == 'prod') ? 'Standard_GRS' : 'Standard_LRS'
+var appServicePlanSkuName = (environmentType == 'prod') ? 'P2_v3' : 'F1'
+var appServicePlanName = 'toy-product-launch-plan'
+
+
 resource storageAccount 'Microsoft.Storage/storageAccounts@2021-08-01' = {
-  name: 'toylnchstore1567657676'
-  location: 'westus3'
+  name: storageAccountName 
+  location: location
   sku: {
-    name: 'Standard_LRS'
+    name: storageAccountSkuName
   }
   kind: 'StorageV2'
   properties: {
     accessTier: 'Hot'
+  }
+}
+
+resource appServicePlan 'Microsoft.Web/serverFarms@2021-03-01' = {
+  name: appServicePlanName
+  location: location
+  sku: {
+    name: appServicePlanSkuName
+  }
+}
+
+resource appServiceApp 'Microsoft.Web/sites@2021-03-01' = {
+  name: appServiceAppName
+  location: location
+  properties: {
+    serverFarmId: appServicePlan.id
+    httpsOnly: true
   }
 }
 
@@ -21,21 +53,6 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-08-01' = {
 
 // New-AzResourceGroupDeployment -TemplateFile main.bicep
 
-resource appServicePlan 'Microsoft.Web/serverFarms@2021-03-01' = {
-  name: 'toy-product-launch-plan-starter'
-  location: 'westus3'
-  sku: {
-    name: 'F1'
-  }
-}
-
-resource appServiceApp 'Microsoft.Web/sites@2021-03-01' = {
-  name: 'toy-product-launch-110101101'
-  location: 'westus3'
-  properties: {
-    serverFarmId: appServicePlan.id
-    httpsOnly: true
-  }
-}
-
 // New-AzResourceGroupDeployment -TemplateFile examples/toy_demo.bicep -ResourceGroupName "learn-c6694696-2422-4b55-8c60-721ce6152960"
+
+// New-AzResourceGroupDeployment -TemplateFile examples/toy_demo.bicep -ResourceGroupName "learn-c6694696-2422-4b55-8c60-721ce6152960" -environmentType nonprod
